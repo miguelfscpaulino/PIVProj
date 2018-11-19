@@ -6,7 +6,8 @@ Work developed For the Image Processing and Vision course in Instituto Superior 
 	Detection, localization and tracking of moving objects using information from depth cameras.
 
 ## Notes
-    Por equanto correr com o track3d_part12
+ 
+To do: mark the points of the box in the moving object, possibly using the converted points from the connected image...
 
 ## TODO
     - ...
