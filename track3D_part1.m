@@ -28,7 +28,7 @@ imagesc(bggray);
 
 for i=1:(length(imgseq1))
     imdiff=abs(imgsd(:,:,i)-bgdepth)>.2;
-    imgdiffiltered=imopen(imdiff,strel('disk',5));
+    imgdiffiltered=imopen(imdiff,strel('disk',9));
     %     figure(1);
     %     imagesc([imgdiffiltered]);
     %     title('Difference image and morph filtered');
@@ -36,34 +36,27 @@ for i=1:(length(imgseq1))
     %     figure(2);
     %     imagesc([imgsd(:,:,i) bgdepth]);
     %     title('Depth image i and background image');
-    figure(3);
+%     figure(3);
     bw2=bwareaopen(imgdiffiltered,2000);
-    imagesc(bw2);
-    figure(4);
+%     imagesc(bw2);
+    figure(3);
     [bw3,M]=bwlabel(bw2);
     imagesc(bw3);
     
-    for j=1:M
-        
-        [row,col]=find(bw3==j);
-        mask(j)=struct('x',col,'y',row);
-        yy=[min(row) max(row) max(row) min(row) min(row)];
-        xx=[min(col) min(col) max(col) max(col) min(col)];
-        aux=[xx' yy'];
-        hold on
-        plot(xx,yy,'r');
+    for j=1:M        
+        ind=find(bw3==j);
+        load(imgseq1(i).depth);
+        aux=zeros(480,640);
+        aux(ind)=depth_array(ind);
+        xyz1=get_xyz_asus(aux(:),[480 640],(1:640*480)', cam_params.Kdepth,2,1);
+        pc1=pointCloud(xyz1);
+        figure(6);
+        showPointCloud(pc1);
+        pause(0.5);
         
     end
     
-    load(imgseq1(i).depth);
-    dep=depth_array(unique(mask(1).y),unique(mask(1).x));
-    dep2=depth_array(unique(aux(:,2)),unique(aux(:,1)));
-    xyz1=get_xyz_asus(dep(:),size(dep),(1:size(dep(:)))', cam_params.Kdepth,2,1);
-    xyz2=get_xyz_asus(dep2(:),size(dep2),(1:size(dep2(:)))',cam_params.Kdepth,2,1);
-    pc1=pointCloud(xyz1);
-    figure(9);    
-    showPointCloud(pc1);
-    pause(0.5);
+    
     
     
     %title('Connected components');

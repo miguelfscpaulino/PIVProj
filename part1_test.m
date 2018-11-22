@@ -1,4 +1,4 @@
-imgs_folder = 'images';
+imgs_folder = 'filinha';
 
 img_rgb=dir(fullfile(imgs_folder,'*.jpg'));
 img_depth=dir(fullfile(imgs_folder,'*.mat'));
@@ -15,4 +15,4 @@ end
 
 load('cameraparametersAsus.mat');
 
-[obj]=track3D_part12(imgseq1, cam_params);
+[obj]=track3D_part1(imgseq1, cam_params);
