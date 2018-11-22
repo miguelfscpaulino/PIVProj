@@ -3,6 +3,9 @@ function xyz_ret = get_xyz_asus(im_vec, im_orig_size, good_inds, K, alpha, beta)
 % im_orig_size - original image size (HxW) : [H, W]
 % goot_inds - indexes of the image that are valid, i.e., different from 0.
 
+varlist = {'u','v','im_size','xyz','z'};
+clear(varlist{:});
+
 persistent u;
 persistent v;
 persistent im_size;
@@ -22,6 +25,7 @@ if isempty(im_size)
     u = u(:)-Cx;
     v = repmat((1:im_size(1))',im_size(2),1);
     v=v(:)-Cy;
+    
     xyz=zeros(length(u),3);
 end
 
