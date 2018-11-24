@@ -1,4 +1,4 @@
-imgs_folder = 'filinha';
+imgs_folder = 'images';
 
 img_rgb=dir(fullfile(imgs_folder,'*.jpg'));
 img_depth=dir(fullfile(imgs_folder,'*.mat'));

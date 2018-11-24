@@ -46,7 +46,7 @@ for i=1:(length(imgseq1))
     for j=1:M        
         ind=find(bw3==j);
         load(imgseq1(i).depth);
-        aux=zeros(480,640);
+        aux=NaN(480,640);
         aux(ind)=depth_array(ind);
         xyz1=get_xyz_asus(aux(:),[480 640],(1:640*480)', cam_params.Kdepth,2,1);
         pc1=pointCloud(xyz1);
