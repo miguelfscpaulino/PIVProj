@@ -4,54 +4,88 @@ function [objects] = track3D_part1(imgseq1, cam_params)
 
 imgs=zeros(480,640,length(imgseq1));
 imgsd=zeros(480,640,length(imgseq1));
+
 for i=1:length(imgseq1)
     imgs(:,:,i)=rgb2gray(imread(imgseq1(i).rgb));
     load(imgseq1(i).depth);
     imgsd(:,:,i)=double(depth_array)/1000;
-    %figure(1)
-    %imshow(uint8(imgs(:,:,i)));
-    figure(2);
+    figure(1);
     imagesc(imgsd(:,:,i));
-    %colormap(gray);
     pause(0.01);
 end
 
-
+% Calculate BackGround
 bgdepth=median(imgsd,3);
 bggray=median(imgs,3);
-figure();
+figure(2);
 imagesc(bgdepth);
-figure();
-imagesc(bggray);
-
 
 
 for i=1:(length(imgseq1))
+    
+    figure(1);
+    imagesc(imgsd(:,:,i));
+    
+    %BackGround Subtraction
     imdiff=abs(imgsd(:,:,i)-bgdepth)>.2;
+    
+    % Morfological Filter
     imgdiffiltered=imopen(imdiff,strel('disk',9));
-    %     figure(1);
-    %     imagesc([imgdiffiltered]);
-    %     title('Difference image and morph filtered');
-    %     colormap(gray);
-    %     figure(2);
-    %     imagesc([imgsd(:,:,i) bgdepth]);
-    %     title('Depth image i and background image');
-%     figure(3);
-    bw2=bwareaopen(imgdiffiltered,2000);
-%     imagesc(bw2);
+    
     figure(3);
+    imagesc(imgdiffiltered);
+    
+    value=find(imgdiffiltered==1);
+    grad=zeros(480,640);
+    dept=imgsd(:,:,i);
+    grad(value)=dept(value);
+    
+    figure(4);
+    gradVal=abs(gradient(grad));
+    imagesc(gradVal);
+    
+    for r=2:479
+        for c=2:639
+            
+            v=abs(gradVal(r,c)-[gradVal(r+1,c) gradVal(r-1,c) gradVal(r,c+1) gradVal(r,c-1)]);
+            if(~isempty(find(v > 0.2)>0))
+                imgdiffiltered(r,c)=0;
+            end
+            
+        end
+    end
+        
+    figure(5);
+    imagesc(imgdiffiltered);
+    
+    bw2=bwareaopen(imgdiffiltered,1000);
+    
     [bw3,M]=bwlabel(bw2);
+    figure(6);
     imagesc(bw3);
     
     for j=1:M        
         ind=find(bw3==j);
         load(imgseq1(i).depth);
-        aux=NaN(480,640);
+        aux=zeros(480,640);
         aux(ind)=depth_array(ind);
-        xyz1=get_xyz_asus(aux(:),[480 640],(1:640*480)', cam_params.Kdepth,2,1);
+        xyz1=get_xyz_asus(aux(:),[480 640], find(aux>0.2 & aux<6000), cam_params.Kdepth,2,1);
         pc1=pointCloud(xyz1);
-        figure(6);
+        figure(7);
         showPointCloud(pc1);
+        
+        zmax=max(pc1.Location(:,3))
+        Z=pc1.Location(:,3);
+        zmin=min(Z(Z~=0))
+        
+        ymax=max(pc1.Location(:,2))
+        Y=pc1.Location(:,2);
+        ymin=min(Y)
+        
+        xmax=max(pc1.Location(:,1))
+        X=pc1.Location(:,1);
+        xmin=min(X)
+        
         pause(0.5);
         
     end

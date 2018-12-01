@@ -15,4 +15,33 @@ end
 
 load('cameraparametersAsus.mat');
 
+% 	% Convert RGB image to HSV
+% 	hsvImage = rgb2hsv(imread(imgseq1(1).rgb));
+% 	% Extract out the H, S, and V images individually
+% 	hImage = hsvImage(:,:,1);
+% 	sImage = hsvImage(:,:,2);
+% 	vImage = hsvImage(:,:,3);
+% 	
+% 	% Display the hue image.
+%     figure
+%     imagesc(imread(imgseq1(1).rgb));
+%     
+% 	figure
+%     subplot(1,2,1);
+% 	imagesc(hImage);
+%     subplot(1,2,2);
+%     imhist(hImage)
+%     
+%     figure
+%     subplot(1,2,1);
+% 	imagesc(sImage);
+%     subplot(1,2,2);
+%     imhist(sImage)
+%     
+%     figure
+%     subplot(1,2,1);
+% 	imagesc(vImage);
+%     subplot(1,2,2);
+%     imhist(vImage)
+
 [obj]=track3D_part1(imgseq1, cam_params);
