@@ -1,4 +1,4 @@
-imgs_folder = 'images';
+imgs_folder = 'images2';
 
 img_rgb=dir(fullfile(imgs_folder,'*.png'));
 img_depth=dir(fullfile(imgs_folder,'*.mat'));

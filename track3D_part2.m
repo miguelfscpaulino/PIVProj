@@ -22,6 +22,13 @@ imgsd2=zeros(480,640,length(imgseq2));
 
     end
     
+    
+    
+    
+    
+    
+    
+    
     objects=1;
     cam2toW=1;
 end

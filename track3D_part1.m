@@ -91,15 +91,12 @@ for i=1:(length(imgseq1))
         X=pc1.Location(:,1);
         xmin=min(X)
         
-        pause(0.2);
+        pause(0.1);
         
     end
     
-    
-    
-    
     %title('Connected components');
-    pause(0.5);
+    pause(0.1);
     
 end
 
