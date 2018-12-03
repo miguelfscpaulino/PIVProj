@@ -15,8 +15,7 @@ for i=1:length(imgseq1)
 end
 
 % Calculate BackGround
-bgdepth=median(imgsd,3);
-bggray=median(imgs,3);
+bgdepth=median(imgsd(:,:,1:30),3);
 figure(2);
 imagesc(bgdepth);
 
@@ -41,14 +40,20 @@ for i=1:(length(imgseq1))
     grad(value)=dept(value);
     
     figure(4);
-    gradVal=abs(gradient(grad));
-    imagesc(gradVal);
+    [FX,FY]=gradient(grad);
+    gradValX=abs(FX);
+    gradValY=abs(FY);
+    subplot(1,2,1);
+    imagesc(gradValX);
+    subplot(1,2,2);
+    imagesc(gradValY);
     
     for r=2:479
         for c=2:639
             
-            v=abs(gradVal(r,c)-[gradVal(r+1,c) gradVal(r-1,c) gradVal(r,c+1) gradVal(r,c-1)]);
-            if(~isempty(find(v > 0.2)>0))
+            v=abs(gradValX(r,c)-[gradValX(r+1,c) gradValX(r-1,c) gradValX(r,c+1) gradValX(r,c-1) gradValX(r+1,c+1) gradValX(r-1,c-1) gradValX(r-1,c+1) gradValX(r+1,c-1)]);
+            u=abs(gradValY(r,c)-[gradValY(r+1,c) gradValY(r-1,c) gradValY(r,c+1) gradValY(r,c-1) gradValY(r+1,c+1) gradValY(r-1,c-1) gradValY(r-1,c+1) gradValY(r+1,c-1)]);
+            if(~isempty(find(v > 0.2)>0) || ~isempty(find(u > 0.2)>0))
                 imgdiffiltered(r,c)=0;
             end
             
@@ -86,7 +91,7 @@ for i=1:(length(imgseq1))
         X=pc1.Location(:,1);
         xmin=min(X)
         
-        pause(0.5);
+        pause(0.2);
         
     end
     
@@ -94,7 +99,7 @@ for i=1:(length(imgseq1))
     
     
     %title('Connected components');
-    pause(0.1);
+    pause(0.5);
     
 end
 
