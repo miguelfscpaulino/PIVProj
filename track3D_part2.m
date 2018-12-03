@@ -22,6 +22,37 @@ imgsd2=zeros(480,640,length(imgseq2));
 
     end
     
+    % Calculate BackGround
+    bgdepth_cam1=median(imgsd1(:,:,:),3);
+    bgrgb_cam1=median(imgs1(:,:,:),3);
+    bgrgb_cam2=median(imgs2(:,:,:),3);
+    bgdepth_cam2=median(imgsd2(:,:,:),3);
+    figure(3);
+    subplot(2,2,1);
+    imagesc(bgdepth_cam1);
+    subplot(2,2,2);
+    imagesc(bgdepth_cam2);
+    subplot(2,2,3);
+    imagesc(bgrgb_cam1);
+    subplot(2,2,4);
+    imagesc(bgrgb_cam2);
+    
+    [f1,d1]=vl_sift(im2single(bgrgb_cam1));
+    [f2,d2]=vl_sift(im2single(bgrgb_cam2));
+    
+    matches=vl_ubcmatch(d1,d2);
+    figure(4);
+    subplot(1,2,1);
+    imagesc(bgrgb_cam1);
+    hold on;
+    vl_plotframe(f1(:,matches(1,:)),'r');
+    hold off;
+    subplot(1,2,2);
+    imagesc(bgrgb_cam2);
+    hold on;
+    vl_plotframe(f2(:,matches(2,:)),'r');
+    hold off;
+    
     
     
     
