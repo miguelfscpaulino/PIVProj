@@ -7,7 +7,7 @@ Work developed For the Image Processing and Vision course in Instituto Superior 
 
 ## Notes
  
-To do: mark the points of the box in the moving object, possibly using the converted points from the connected image...
+
 
 ## TODO
     - ...
