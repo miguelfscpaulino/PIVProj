@@ -37,13 +37,36 @@ imgsd2=zeros(480,640,length(imgseq2));
     subplot(2,2,4);
     imagesc(bgrgb_cam2);
     
+    % Harris corner detector (good points)
+    figure(4);
+    subplot(1,2,1);
+    [cim1, r1, c1] = harris(bgrgb_cam1, 2, 300, 2, 0);
+    imagesc(bgrgb_cam1);
+    hold on;
+    plot(c1,r1,'r+');
+    subplot(1,2,2);
+    [cim2, r2, c2] = harris(bgrgb_cam2, 2, 300, 2, 0);
+    imagesc(bgrgb_cam2);
+    hold on;
+    plot(c2,r2,'r+');
+    
+    % outra maneira de ver o harris 
+%     figure();
+%     corners = detectHarrisFeatures(bgrgb_cam2, 'FilterSize', 3);
+%     imshow(bgrgb_cam2); hold on;
+%     plot(corners.selectStrongest(300));
+
+    % melhores pontos usando SIFT
     [f1,d1]=vl_sift(im2single(bgrgb_cam1));
     [f2,d2]=vl_sift(im2single(bgrgb_cam2));
     
+    
+    % Matching
     matches=vl_ubcmatch(d1,d2);
     f_cam1=round(f1(1:2,matches(1,:)));
     f_cam2=round(f2(1:2,matches(2,:)));
-    figure(4);
+    
+    figure(5);
     subplot(1,2,1);
     imagesc(bgrgb_cam1);
     hold on;
@@ -54,7 +77,8 @@ imgsd2=zeros(480,640,length(imgseq2));
     hold on;
     vl_plotframe(f2(:,matches(2,:)),'r');
     hold off;
-   
+    
+    % Ransac
     inliers=[];
     np=6;
     xyz_cam1=zeros(np,3);
@@ -81,11 +105,11 @@ imgsd2=zeros(480,640,length(imgseq2));
        pc1=pointCloud(xyz_cam1,'Color',reshape(rgbd_cam1,[480*640 3]));
        pc2=pointCloud(xyz_cam2,'Color',reshape(rgbd_cam2,[480*640 3]));
        pc3=pointCloud(xyz21,'Color',reshape(rgbd_cam2,[480*640 3]));
-       figure(5);
-       showPointCloud(pc1);
        figure(6);
-       showPointCloud(pc2);
+       showPointCloud(pc1);
        figure(7);
+       showPointCloud(pc2);
+       figure(8);
        showPointCloud(pc3);
    %end
    
