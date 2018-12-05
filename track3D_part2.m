@@ -37,88 +37,110 @@ imgsd2=zeros(480,640,length(imgseq2));
     subplot(2,2,4);
     imagesc(bgrgb_cam2);
     
-    % Harris corner detector (good points)
-    figure(4);
-    subplot(1,2,1);
-    [cim1, r1, c1] = harris(bgrgb_cam1, 2, 300, 2, 0);
-    imagesc(bgrgb_cam1);
-    hold on;
-    plot(c1,r1,'r+');
-    subplot(1,2,2);
-    [cim2, r2, c2] = harris(bgrgb_cam2, 2, 300, 2, 0);
-    imagesc(bgrgb_cam2);
-    hold on;
-    plot(c2,r2,'r+');
+%     % Harris corner detector (good points)
+%     figure(4);
+%     subplot(1,2,1);
+%     [cim1, r1, c1] = harris(bgrgb_cam1, 2, 300, 2, 0);
+%     imagesc(bgrgb_cam1);
+%     hold on;
+%     plot(c1,r1,'r+');
+%     subplot(1,2,2);
+%     [cim2, r2, c2] = harris(bgrgb_cam2, 2, 300, 2, 0);
+%     imagesc(bgrgb_cam2);
+%     hold on;
+%     plot(c2,r2,'r+');
     
-    % outra maneira de ver o harris 
+    % Another Harris implemations same results
 %     figure();
 %     corners = detectHarrisFeatures(bgrgb_cam2, 'FilterSize', 3);
 %     imshow(bgrgb_cam2); hold on;
 %     plot(corners.selectStrongest(300));
 
-    % melhores pontos usando SIFT
-    [f1,d1]=vl_sift(im2single(bgrgb_cam1));
-    [f2,d2]=vl_sift(im2single(bgrgb_cam2));
+    % find matching points using SIFT
+    for i=1:length(imgseq1)
+        load(imgseq1(i).depth);
+        xyz_cam1=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
+        rgbd_cam1=get_rgbd(xyz_cam1,imread(imgseq1(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
+        load(imgseq2(i).depth);
+        xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
+        rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
+        
+        [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh',500);
+        [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh',500);
+        matches= vl_ubcmatch(d1,d2);
+        num_matches(i)=length(matches);        
+    end
     
-    
-    % Matching
-    matches=vl_ubcmatch(d1,d2);
-    f_cam1=round(f1(1:2,matches(1,:)));
-    f_cam2=round(f2(1:2,matches(2,:)));
-    
-    figure(5);
+    %Matching for the image with the most matches
+    [value index]=max(num_matches);
+    load(imgseq1(index).depth);
+    xyz_cam1=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
+    rgbd_cam1=get_rgbd(xyz_cam1,imread(imgseq1(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
+    load(imgseq2(index).depth);
+    xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
+    rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
+    [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh',500);
+    [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh',500);
+    x_cam1=fix(f1(1,matches(1,:)));
+    x_cam2=fix(f2(1,matches(2,:)));
+    y_cam1=fix(f1(2,matches(1,:)));
+    y_cam2=fix(f2(2,matches(2,:)));
+    figure(4);
     subplot(1,2,1);
-    imagesc(bgrgb_cam1);
+    imagesc(imgs1(:,:,index));
     hold on;
-    vl_plotframe(f1(:,matches(1,:)),'r');
+    plot(x_cam1,y_cam1,'*r');
     hold off;
     subplot(1,2,2);
-    imagesc(bgrgb_cam2);
+    imagesc(imgs2(:,:,index));
     hold on;
-    vl_plotframe(f2(:,matches(2,:)),'r');
+    plot(x_cam2,y_cam2,'*r');
     hold off;
     
-    % Ransac
-    inliers=[];
-    np=6;
-    xyz_cam1=zeros(np,3);
-    xyz_cam2=xyz_cam1;
-    xyz_cam1=get_xyz_asus(bgdepth_cam1(:)*1000,[480 640],(1:size(bgdepth_cam1)),cam_params.Kdepth,1,0);
-    xyz_cam2=get_xyz_asus(bgdepth_cam2(:)*1000,[480 640],(1:size(bgdepth_cam2)),cam_params.Kdepth,1,0);
-    rgbd_cam1=get_rgbd(xyz_cam1,imread(imgseq1(1).rgb),cam_params.R, cam_params.T, cam_params.Krgb);
-    rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(1).rgb),cam_params.R, cam_params.T, cam_params.Krgb);  
-   
-   %for n=1:100
-   %try uncomment the for and replace ind_cam's with the commented ones
-   %ind_cam1=sub2ind(size(bgrgb_cam1),f_cam1(2,p),f_cam1(1,p));
-   %ind_cam2=sub2ind(size(bgrgb_cam2),f_cam2(2,p),f_cam2(1,p));
-       p = randperm(length(f_cam1),np);
-       ind_cam1=sub2ind(size(bgrgb_cam1),f_cam1(2,:),f_cam1(1,:));
-       ind_cam2=sub2ind(size(bgrgb_cam2),f_cam2(2,:),f_cam2(1,:));
-       xyz_rand1=xyz_cam1(ind_cam1,:);
-       xyz_rand2=xyz_cam2(ind_cam2,:);
-       inds=find(xyz_rand1(:,3).*xyz_rand2(:,3)>0);
-       xyz_rand1=xyz_rand1(inds,:);
-       xyz_rand2=xyz_rand2(inds,:);
-       [d,z,transform]=procrustes(xyz_rand1,xyz_rand2,'scaling',false, 'reflection',false);
-       xyz21=xyz_cam2*transform.T+ones(length(xyz_cam2),1)*transform.c(1,:);
-       pc1=pointCloud(xyz_cam1,'Color',reshape(rgbd_cam1,[480*640 3]));
-       pc2=pointCloud(xyz_cam2,'Color',reshape(rgbd_cam2,[480*640 3]));
-       pc3=pointCloud(xyz21,'Color',reshape(rgbd_cam2,[480*640 3]));
-       figure(6);
-       showPointCloud(pc1);
-       figure(7);
-       showPointCloud(pc2);
-       figure(8);
-       showPointCloud(pc3);
-   %end
-   
+    %Ransac
+    ind_cam1=sub2ind([480 640],y_cam1,x_cam1);
+    ind_cam2=sub2ind([480 640],y_cam2,x_cam2);
+    xyz_points1=xyz_cam1(ind_cam1,:);
+    xyz_points2=xyz_cam2(ind_cam2,:);
     
+    %choose the good points
+    inds=find((xyz_points1(:,3).*xyz_points2(:,3))>0);
+    xyz_points1=xyz_points1(inds,:);
+    xyz_points2=xyz_points2(inds,:);
     
+    %Test random sets of 4 points
+    niter=500;
+    error_thresh=0.10;
+    aux=fix(rand(4*niter,1)*length(xyz_points1)+1);
     
+    for i=1:niter-4
+        xyz_aux1=xyz_points1(aux(4*i:4*i+3),:);
+        xyz_aux2=xyz_points2(aux(4*i:4*i+3),:);
+        [d,z,trans]=procrustes(xyz_aux1,xyz_aux2,'scaling',false,'reflection',false);
+        R(:,:,i)=trans.T; T(:,:,i)=trans.c;
+        error=xyz_points1-xyz_points2*trans.T-ones(length(xyz_points2),1)*trans.c(1,:);
+        numinliers(i)=length(find(sum(error.*error,2)<error_thresh^2));
+    end
     
-    
+    [value index]= max(numinliers);
+    R=R(:,:,index);
+    T=T(:,:,index);
+    error=xyz_points1-xyz_points2*R-ones(length(xyz_points2),1)*T(1,:);
+    inds=find(sum(error.*error,2)<error_thresh^2);
+    xyz_points1=xyz_points1(inds,:);
+    xyz_points2=xyz_points2(inds,:);
+    [d,z,trans]=procrustes(xyz_points1,xyz_points2,'scaling',false,'reflection',false);
+    cam2toW=struct('R',trans.T,'T', trans.c);
+    xyz21=xyz_cam2*cam2toW.R+ones(length(xyz_cam2),1)*cam2toW.T(1,:);
+    pc1=pointCloud(xyz_cam1,'Color',reshape(rgbd_cam1,[480*640 3]));
+    pc2=pointCloud(xyz_cam2,'Color',reshape(rgbd_cam2,[480*640 3]));
+    pc3=pointCloud(xyz21,'Color',reshape(rgbd_cam1,[480*640 3]));
+    figure(5);
+    showPointCloud(pc1);
+    figure(6);
+    showPointCloud(pc2);
+    figure(7);
+    showPointCloud(pc3);
     
     objects=1;
-    cam2toW=1;
 end
