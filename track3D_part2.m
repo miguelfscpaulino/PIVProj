@@ -1,6 +1,7 @@
 function [objects,cam2toW] = track3D_part2(imgseq1, imgseq2, cam_params)
 
-
+% sift parameter
+edge_thresh=100;
 
 imgs1=zeros(480,640,length(imgseq1));
 imgsd1=zeros(480,640,length(imgseq1));
@@ -13,10 +14,11 @@ imgsd2=zeros(480,640,length(imgseq2));
         load(imgseq1(i).depth);
         imgsd1(:,:,i)=double(depth_array)/1000;
         figure(1);
+        subplot(1,2,1);
         imagesc(imgsd1(:,:,i));
         load(imgseq2(i).depth);
         imgsd2(:,:,i)=double(depth_array)/1000;
-        figure(2);
+        subplot(1,2,2);
         imagesc(imgsd2(:,:,i));
         pause(0.1);
 
@@ -27,7 +29,7 @@ imgsd2=zeros(480,640,length(imgseq2));
     bgrgb_cam1=median(imgs1(:,:,:),3);
     bgrgb_cam2=median(imgs2(:,:,:),3);
     bgdepth_cam2=median(imgsd2(:,:,:),3);
-    figure(3);
+    figure(2);
     subplot(2,2,1);
     imagesc(bgdepth_cam1);
     subplot(2,2,2);
@@ -64,42 +66,55 @@ imgsd2=zeros(480,640,length(imgseq2));
         load(imgseq2(i).depth);
         xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
         rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
-        
-        [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh',500);
-        [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh',500);
-        matches= vl_ubcmatch(d1,d2);
+     
+        [~,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', edge_thresh);
+        [~,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', edge_thresh);
+        [matches, ~]= vl_ubcmatch(d1,d2);
         num_matches(i)=length(matches);        
     end
     
     %Matching for the image with the most matches
-    [value index]=max(num_matches);
+    [~,index]=max(num_matches);
+    
     load(imgseq1(index).depth);
     xyz_cam1=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
     rgbd_cam1=get_rgbd(xyz_cam1,imread(imgseq1(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
+    
     load(imgseq2(index).depth);
     xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
     rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
-    [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh',500);
-    [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh',500);
-    x_cam1=fix(f1(1,matches(1,:)));
-    x_cam2=fix(f2(1,matches(2,:)));
-    y_cam1=fix(f1(2,matches(1,:)));
-    y_cam2=fix(f2(2,matches(2,:)));
-    figure(4);
+    
+    [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', edge_thresh);
+    [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', edge_thresh);
+    [matches, ~]= vl_ubcmatch(d1,d2);
+    
+    cam1=[(fix(f1(1,matches(1,:))))' (fix(f1(2,matches(1,:))))'];
+    cam2=[(fix(f2(1,matches(2,:))))' (fix(f2(2,matches(2,:))))'];
+    
+    % good points in each image
+    figure(3);
     subplot(1,2,1);
     imagesc(imgs1(:,:,index));
     hold on;
-    plot(x_cam1,y_cam1,'*r');
+    plot(cam1(:,1),cam1(:,2),'*r');
     hold off;
     subplot(1,2,2);
     imagesc(imgs2(:,:,index));
     hold on;
-    plot(x_cam2,y_cam2,'*r');
+    plot(cam2(:,1),cam2(:,2),'*r');
     hold off;
     
+    % matched points
+    figure(4);
+    ax = axes;
+    showMatchedFeatures(bgrgb_cam1, bgrgb_cam2, cam1, cam2,'montage','Parent',ax);
+    
+    
+    
     %Ransac
-    ind_cam1=sub2ind([480 640],y_cam1,x_cam1);
-    ind_cam2=sub2ind([480 640],y_cam2,x_cam2);
+    
+    ind_cam1=sub2ind([480 640],cam1(:,2),cam1(:,1));
+    ind_cam2=sub2ind([480 640],cam2(:,2),cam2(:,1));
     xyz_points1=xyz_cam1(ind_cam1,:);
     xyz_points2=xyz_cam2(ind_cam2,:);
     

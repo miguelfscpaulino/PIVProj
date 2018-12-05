@@ -1,3 +1,6 @@
+close all;
+clear;
+
 imgs_folder = 'images2';
 
 img_rgb=dir(fullfile(imgs_folder,'*.png'));
