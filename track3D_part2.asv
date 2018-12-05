@@ -1,7 +1,7 @@
 function [objects,cam2toW] = track3D_part2(imgseq1, imgseq2, cam_params)
 
 % sift parameter
-
+edge_thresh=100;
 
 imgs1=zeros(480,640,length(imgseq1));
 imgsd1=zeros(480,640,length(imgseq1));
@@ -67,8 +67,8 @@ imgsd2=zeros(480,640,length(imgseq2));
         xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
         rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
      
-        [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', 500);
-        [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', 500);
+        [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', edge_thresh);
+        [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', edge_thresh);
         matches = vl_ubcmatch(d1,d2);
         num_matches(i)=length(matches);        
     end
@@ -84,8 +84,8 @@ imgsd2=zeros(480,640,length(imgseq2));
     xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
     rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(index).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
     
-    [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', 500);
-    [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', 500);
+    [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', edge_thresh);
+    [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', edge_thresh);
     matches = vl_ubcmatch(d1,d2);
     
     cam1=[(fix(f1(1,matches(1,:))))' (fix(f1(2,matches(1,:))))'];
@@ -107,7 +107,7 @@ imgsd2=zeros(480,640,length(imgseq2));
     % matched points
     figure(4);
     ax = axes;
-    showMatchedFeatures(imgs1(:,:,index), imgs2(:,:,index), cam1, cam2,'montage','Parent',ax);
+    showMatchedFeatures(bgrgb_cam1, bgrgb_cam2, cam1, cam2,'montage','Parent',ax);
     
     
     
@@ -132,7 +132,7 @@ imgsd2=zeros(480,640,length(imgseq2));
         xyz_aux1=xyz_points1(aux(4*i:4*i+3),:);
         xyz_aux2=xyz_points2(aux(4*i:4*i+3),:);
         [d,z,trans]=procrustes(xyz_aux1,xyz_aux2,'scaling',false,'reflection',false);
-        R(:,:,i)=trans.T; T(:,:,i)=trans.c(1,:);
+        R(:,:,i)=trans.T; T(:,:,i)=trans.c;
         error=xyz_points1-xyz_points2*trans.T-ones(length(xyz_points2),1)*trans.c(1,:);
         numinliers(i)=length(find(sum(error.*error,2)<error_thresh^2));
     end
@@ -145,7 +145,7 @@ imgsd2=zeros(480,640,length(imgseq2));
     xyz_points1=xyz_points1(inds,:);
     xyz_points2=xyz_points2(inds,:);
     [d,z,trans]=procrustes(xyz_points1,xyz_points2,'scaling',false,'reflection',false);
-    cam2toW=struct('R',trans.T,'T', trans.c(1,:));
+    cam2toW=struct('R',trans.T,'T', trans.c);
     xyz21=xyz_cam2*cam2toW.R+ones(length(xyz_cam2),1)*cam2toW.T(1,:);
     pc1=pointCloud(xyz_cam1,'Color',reshape(rgbd_cam1,[480*640 3]));
     pc2=pointCloud(xyz_cam2,'Color',reshape(rgbd_cam2,[480*640 3]));
