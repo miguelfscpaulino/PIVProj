@@ -1,6 +1,6 @@
 function [objects,cam2toW] = track3D_part2(imgseq1, imgseq2, cam_params)
 
-% sift parameter
+
 
 
 imgs1=zeros(480,640,length(imgseq1));
@@ -67,31 +67,32 @@ imgsd2=zeros(480,640,length(imgseq2));
         xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
         rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(i).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
      
-        [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', 500);
-        [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', 500);
+        [~,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', 500);
+        [~,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', 500);
         matches = vl_ubcmatch(d1,d2);
         num_matches(i)=length(matches);        
     end
     
     %Matching for the image with the most matches
-    [value index]=max(num_matches);
-    
+    [~, index]=max(num_matches);
+    %get rbgd points from xyz points cam1
     load(imgseq1(index).depth);
     xyz_cam1=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
     rgbd_cam1=get_rgbd(xyz_cam1,imread(imgseq1(index).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
-    
+    %get rbgd points from xyz points cam2
     load(imgseq2(index).depth);
     xyz_cam2=get_xyz_asus(depth_array(:),[480 640], 1:480*640, cam_params.Kdepth ,1,0);
     rgbd_cam2=get_rgbd(xyz_cam2,imread(imgseq2(index).rgb), cam_params.R, cam_params.T, cam_params.Krgb);
-    
+    %get features for both cameras
     [f1,d1]=vl_sift(im2single(rgb2gray(rgbd_cam1)),'edgethresh', 500);
     [f2,d2]=vl_sift(im2single(rgb2gray(rgbd_cam2)),'edgethresh', 500);
+    %find the matching features between the two images
     matches = vl_ubcmatch(d1,d2);
-    
+    %get coordinates of the matching features
     cam1=[(fix(f1(1,matches(1,:))))' (fix(f1(2,matches(1,:))))'];
     cam2=[(fix(f2(1,matches(2,:))))' (fix(f2(2,matches(2,:))))'];
     
-    % good points in each image
+    % image with the good points in each image
     figure(3);
     subplot(1,2,1);
     imagesc(imgs1(:,:,index));
@@ -104,17 +105,17 @@ imgsd2=zeros(480,640,length(imgseq2));
     plot(cam2(:,1),cam2(:,2),'*r');
     hold off;
     
-    % matched points
+    %image with the matched points
     figure(4);
     ax = axes;
     showMatchedFeatures(imgs1(:,:,index), imgs2(:,:,index), cam1, cam2,'montage','Parent',ax);
     
     
     
-    %Ransac
-    
-    ind_cam1=sub2ind([480 640],cam1(:,2)',cam1(:,1)');
-    ind_cam2=sub2ind([480 640],cam2(:,2)',cam2(:,1)');
+    %Ransac    
+    ind_cam1=sub2ind([480 640],cam1(:,2),cam1(:,1));
+    ind_cam2=sub2ind([480 640],cam2(:,2),cam2(:,1));
+    %get xyz points of the matching features for both cameras
     xyz_points1=xyz_cam1(ind_cam1,:);
     xyz_points2=xyz_cam2(ind_cam2,:);
     
@@ -124,29 +125,28 @@ imgsd2=zeros(480,640,length(imgseq2));
     xyz_points2=xyz_points2(inds,:);
     
     %Test random sets of 4 points
-    niter=500;
-    error_thresh=0.10;
+    niter=2000;
+    error_thresh=0.4;
     aux=fix(rand(4*niter,1)*length(xyz_points1)+1);
     
     for i=1:niter-4
         xyz_aux1=xyz_points1(aux(4*i:4*i+3),:);
         xyz_aux2=xyz_points2(aux(4*i:4*i+3),:);
-        [d,z,trans]=procrustes(xyz_aux1,xyz_aux2,'scaling',false,'reflection',false);
+        [~,~,trans]=procrustes(xyz_aux1,xyz_aux2,'scaling',false,'reflection',false);
         R(:,:,i)=trans.T; T(:,:,i)=trans.c(1,:);
         error=xyz_points1-xyz_points2*trans.T-ones(length(xyz_points2),1)*trans.c(1,:);
         numinliers(i)=length(find(sum(error.*error,2)<error_thresh^2));
     end
     
-    [value index]= max(numinliers);
+    [~, index]= max(numinliers);
     R=R(:,:,index);
     T=T(:,:,index);
     error=xyz_points1-xyz_points2*R-ones(length(xyz_points2),1)*T(1,:);
     inds=find(sum(error.*error,2)<error_thresh^2);
     xyz_points1=xyz_points1(inds,:);
     xyz_points2=xyz_points2(inds,:);
-    [d,z,trans]=procrustes(xyz_points1,xyz_points2,'scaling',false,'reflection',false);
-    cam2toW=struct('R',trans.T,'T', trans.c(1,:));
-    xyz21=xyz_cam2*cam2toW.R+ones(length(xyz_cam2),1)*cam2toW.T(1,:);
+    [~,~,trans]=procrustes(xyz_points1,xyz_points2,'scaling',false,'reflection',false); 
+    xyz21=xyz_cam2*trans.T+ones(length(xyz_cam2),1)*trans.c(1,:);
     pc1=pointCloud(xyz_cam1,'Color',reshape(rgbd_cam1,[480*640 3]));
     pc2=pointCloud(xyz_cam2,'Color',reshape(rgbd_cam2,[480*640 3]));
     pc3=pointCloud(xyz21,'Color',reshape(rgbd_cam2,[480*640 3]));
@@ -156,6 +156,6 @@ imgsd2=zeros(480,640,length(imgseq2));
     showPointCloud(pc2);
     figure(7);
     showPointCloud(pc3);
-    
+    cam2toW=struct('R',trans.T,'T', trans.c(1,:)');
     objects=1;
 end

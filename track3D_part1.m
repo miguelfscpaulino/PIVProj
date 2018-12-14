@@ -4,6 +4,7 @@ function [objects] = track3D_part1(imgseq1, cam_params)
 
 imgs=zeros(480,640,length(imgseq1));
 imgsd=zeros(480,640,length(imgseq1));
+objects=struct('X', [], 'Y', [], 'Z', []);
 
 for i=1:length(imgseq1)
     imgs(:,:,i)=rgb2gray(imread(imgseq1(i).rgb));
@@ -16,7 +17,11 @@ end
 
 % Calculate BackGround
 bgdepth=median(imgsd(:,:,1:30),3);
+bgrgb=median(imgs(:,:,1:30),3);
 figure(2);
+subplot(1,2,1);
+imagesc(bgrgb);
+subplot(1,2,2);
 imagesc(bgdepth);
 
 
@@ -74,7 +79,7 @@ for i=1:(length(imgseq1))
         load(imgseq1(i).depth);
         aux=zeros(480,640);
         aux(ind)=depth_array(ind);
-        xyz1=get_xyz_asus(aux(:),[480 640], find(aux>0.2 & aux<6000), cam_params.Kdepth,2,1);
+        xyz1=get_xyz_asus(aux(:),[480 640], find(aux>0.2 & aux<6000), cam_params.Kdepth,1,0);
         pc1=pointCloud(xyz1);
         figure(7);
         showPointCloud(pc1);
@@ -90,19 +95,9 @@ for i=1:(length(imgseq1))
         xmax=max(pc1.Location(:,1))
         X=pc1.Location(:,1);
         xmin=min(X)
-        
         pause(0.1);
-        
-    end
-    
-    %title('Connected components');
-    pause(0.1);
     
 end
-
-
-
-objects=1;
 
 end
 
