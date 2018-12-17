@@ -38,6 +38,4 @@ xyz(:,2) = (xyz(:,3)/Ky) .* v;
 %plot3(x,y,z,'.');axis equal
 xyz_ret = xyz;
 
-
 end
-
